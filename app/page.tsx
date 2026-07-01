@@ -87,8 +87,8 @@ export default function Page() {
     return data;
   }
 
-  // ---- New log (optimistic) ----
-  async function handleNewLog(text: string, mode: SheetMode) {
+  // ---- New log (optimistic + progress toast) ----
+  function handleNewLog(text: string, mode: SheetMode) {
     const id = makeId();
     const now = Date.now();
     if (mode === "food") {
@@ -99,14 +99,19 @@ export default function Page() {
       mutateDay((d) => ({ ...d, activities: [pendingEntry, ...d.activities] }));
     }
 
-    try {
+    const rollback = () =>
+      mutateDay((d) =>
+        mode === "food"
+          ? { ...d, entries: d.entries.filter((en) => en.id !== id) }
+          : { ...d, activities: d.activities.filter((a) => a.id !== id) }
+      );
+
+    const work = (async () => {
       const data = await callModel(text, mode);
       if (mode === "food") {
         const totals: Macros = data?.totals ?? { ...ZERO };
         if (!totals.calories && !totals.protein && !totals.carbs && !totals.fat) {
-          mutateDay((d) => ({ ...d, entries: d.entries.filter((e) => e.id !== id) }));
-          toast.warning("No food detected", { description: "Try naming the dish or ingredients." });
-          return;
+          throw new Error("No food detected — try naming the dish or ingredients.");
         }
         mutateDay((d) => ({
           ...d,
@@ -114,15 +119,11 @@ export default function Page() {
             e.id === id ? { ...e, items: data.items ?? [], totals, explanation: data.explanation, pending: false } : e
           ),
         }));
-        toast.success(`Logged ${totals.calories} kcal`, {
-          description: `${totals.protein}p · ${totals.carbs}c · ${totals.fat}f`,
-        });
+        return `Logged ${totals.calories} kcal · ${totals.protein}p · ${totals.carbs}c · ${totals.fat}f`;
       } else {
         const burnedNow = Number(data?.totalBurned ?? 0);
         if (!burnedNow) {
-          mutateDay((d) => ({ ...d, activities: d.activities.filter((a) => a.id !== id) }));
-          toast.warning("No activity detected", { description: "Try describing the exercise and duration." });
-          return;
+          throw new Error("No activity detected — describe the exercise and duration.");
         }
         const name = (data.activities?.[0]?.name as string) || "Activity";
         mutateDay((d) => ({
@@ -131,17 +132,16 @@ export default function Page() {
             a.id === id ? { ...a, name, caloriesBurned: burnedNow, explanation: data.explanation, pending: false } : a
           ),
         }));
-        toast.success(`+${burnedNow} kcal earned`, { description: "Your calorie ring just got wider." });
+        return `+${burnedNow} kcal earned — ring widened`;
       }
-    } catch (e: any) {
-      // Roll back the optimistic entry on failure.
-      mutateDay((d) =>
-        mode === "food"
-          ? { ...d, entries: d.entries.filter((en) => en.id !== id) }
-          : { ...d, activities: d.activities.filter((a) => a.id !== id) }
-      );
-      toast.danger("Couldn't log that", { description: e?.message });
-    }
+    })();
+
+    work.catch(() => rollback());
+    toast.promise(work, {
+      loading: mode === "food" ? "Estimating nutrition…" : "Estimating calories burned…",
+      success: (msg) => msg as string,
+      error: (e: any) => e?.message || "Couldn't log that",
+    });
   }
 
   // ---- Refine an existing entry (multi-turn) ----
@@ -164,7 +164,7 @@ export default function Page() {
     setSheetOpen(true);
   }
 
-  async function handleRefineSubmit(clarification: string, target: RefineTarget) {
+  function handleRefineSubmit(clarification: string, target: RefineTarget) {
     if (!target) return;
     const { kind, id, text, prior } = target;
     const combinedText = `${text} · ${clarification}`;
@@ -175,12 +175,19 @@ export default function Page() {
         : { ...d, activities: d.activities.map((a) => (a.id === id ? { ...a, pending: true } : a)) }
     );
 
+    const clearPending = () =>
+      mutateDay((d) =>
+        kind === "food"
+          ? { ...d, entries: d.entries.map((en) => (en.id === id ? { ...en, pending: false } : en)) }
+          : { ...d, activities: d.activities.map((a) => (a.id === id ? { ...a, pending: false } : a)) }
+      );
+
     const history = [
       { role: "user", content: text },
       { role: "assistant", content: prior },
     ];
 
-    try {
+    const work = (async () => {
       const data = await callModel(clarification, kind, history);
       if (kind === "food") {
         const totals: Macros = data?.totals ?? { ...ZERO };
@@ -192,7 +199,7 @@ export default function Page() {
               : e
           ),
         }));
-        toast.success("Updated", { description: `${totals.calories} kcal · ${totals.protein}p · ${totals.carbs}c · ${totals.fat}f` });
+        return `Updated · ${totals.calories} kcal · ${totals.protein}p · ${totals.carbs}c · ${totals.fat}f`;
       } else {
         const burnedNow = Number(data?.totalBurned ?? 0);
         const name = (data.activities?.[0]?.name as string) || "Activity";
@@ -204,16 +211,16 @@ export default function Page() {
               : a
           ),
         }));
-        toast.success("Updated", { description: `+${burnedNow} kcal earned` });
+        return `Updated · +${burnedNow} kcal earned`;
       }
-    } catch (e: any) {
-      mutateDay((d) =>
-        kind === "food"
-          ? { ...d, entries: d.entries.map((en) => (en.id === id ? { ...en, pending: false } : en)) }
-          : { ...d, activities: d.activities.map((a) => (a.id === id ? { ...a, pending: false } : a)) }
-      );
-      toast.danger("Couldn't update that", { description: e?.message });
-    }
+    })();
+
+    work.catch(() => clearPending());
+    toast.promise(work, {
+      loading: "Re-estimating…",
+      success: (msg) => msg as string,
+      error: (e: any) => e?.message || "Couldn't update that",
+    });
   }
 
   function onSheetSubmit(text: string) {

@@ -144,7 +144,10 @@ export default function LogSheet({ open, mode, refineText, onClose, onSubmit }: 
         </div>
 
         {isRefine && (
-          <p className="mb-3 rounded-xl bg-[var(--aqua-tint)] px-3 py-2 text-xs text-[var(--teal-deep)]">
+          <p
+            className="mb-3 rounded-xl px-3 py-2 text-xs"
+            style={{ background: "color-mix(in srgb, var(--aqua) 16%, transparent)", color: "var(--ink)" }}
+          >
             Refining: <span className="font-medium">{refineText}</span>
           </p>
         )}
@@ -187,7 +190,10 @@ export default function LogSheet({ open, mode, refineText, onClose, onSubmit }: 
             </p>
 
             {text && (
-              <p className="max-h-24 w-full overflow-y-auto rounded-xl bg-[var(--aqua-tint)] px-3 py-2 text-center text-sm text-[var(--ink)]">
+              <p
+                className="max-h-24 w-full overflow-y-auto rounded-xl px-3 py-2 text-center text-sm"
+                style={{ background: "color-mix(in srgb, var(--aqua) 18%, transparent)", color: "var(--ink)" }}
+              >
                 {text}
               </p>
             )}
