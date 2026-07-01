@@ -155,7 +155,7 @@ export default function Settings({ targets, profile, onSave }: Props) {
                 onChange={(v) => setNum("heightCm", v)}
                 minValue={0}
                 step={1}
-                className="w-36"
+                className="w-32"
                 aria-label="Height in cm"
               >
                 <NumberField.Group>
@@ -169,37 +169,27 @@ export default function Settings({ targets, profile, onSave }: Props) {
 
           {p.heightUnit === "ft" && (
             <div className="flex items-center justify-end gap-2">
-              <NumberField
-                value={p.heightCm ? cmToFtIn(p.heightCm).ft : NaN}
-                onChange={(v) => setHeightFt(v)}
-                minValue={0}
-                step={1}
-                className="w-28"
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={p.heightCm ? cmToFtIn(p.heightCm).ft : ""}
+                onChange={(e) => setHeightFt(e.target.value === "" ? NaN : parseInt(e.target.value, 10))}
                 aria-label="Height feet"
-              >
-                <NumberField.Group>
-                  <NumberField.DecrementButton />
-                  <NumberField.Input />
-                  <NumberField.IncrementButton />
-                </NumberField.Group>
-              </NumberField>
-              <span className="w-5 text-sm text-[var(--ink-muted)]">ft</span>
-              <NumberField
-                value={p.heightCm ? cmToFtIn(p.heightCm).in : NaN}
-                onChange={(v) => setHeightIn(v)}
-                minValue={0}
-                maxValue={11}
-                step={1}
-                className="w-28"
+                className="w-16 rounded-xl border border-[var(--line)] bg-[var(--card)] py-2.5 text-center text-base text-[var(--ink)] outline-none focus:border-[var(--aqua)]"
+              />
+              <span className="text-sm text-[var(--ink-muted)]">ft</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={11}
+                value={p.heightCm ? cmToFtIn(p.heightCm).in : ""}
+                onChange={(e) => setHeightIn(e.target.value === "" ? NaN : parseInt(e.target.value, 10))}
                 aria-label="Height inches"
-              >
-                <NumberField.Group>
-                  <NumberField.DecrementButton />
-                  <NumberField.Input />
-                  <NumberField.IncrementButton />
-                </NumberField.Group>
-              </NumberField>
-              <span className="w-5 text-sm text-[var(--ink-muted)]">in</span>
+                className="w-16 rounded-xl border border-[var(--line)] bg-[var(--card)] py-2.5 text-center text-base text-[var(--ink)] outline-none focus:border-[var(--aqua)]"
+              />
+              <span className="text-sm text-[var(--ink-muted)]">in</span>
             </div>
           )}
         </div>
@@ -215,7 +205,7 @@ export default function Settings({ targets, profile, onSave }: Props) {
             onChange={(v) => setNum("age", v)}
             minValue={0}
             step={1}
-            className="w-36"
+            className="w-32"
             aria-label="Age"
           >
             <NumberField.Group>
