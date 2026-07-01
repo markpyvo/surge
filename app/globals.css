@@ -1,0 +1,176 @@
+/* Tailwind CSS v4 — must be first */
+@import "tailwindcss";
+
+/* HeroUI v3 styles — must be after Tailwind */
+@import "@heroui/styles";
+
+/*
+  Tide design system — sunset over ocean waves inside a progress ring.
+  Light, airy, wellness. Aqua is the default accent; coral is reserved for
+  the single most important energy/calorie moment per screen.
+*/
+
+:root {
+  /* Brand & surfaces */
+  --teal-deep: #0c5a66;
+  --teal-shadow: #16707c;
+  --teal-700: #0e5a66;
+
+  /* Accent / interactive (the "tide") */
+  --aqua: #34d1be;
+  --aqua-soft: #8fe7dc;
+  --aqua-tint: #e4f7f4;
+
+  /* Energy / calories (the "sun") — sparingly */
+  --coral: #ff7e5f;
+  --coral-soft: #ffe3da;
+
+  /* Neutrals */
+  --ink: #0f2227;
+  --ink-muted: #5c7176;
+  --line: #e2ebec;
+  --bg: #f6fafa;
+  --card: #ffffff;
+
+  /* Semantic */
+  --success-c: #34d1be;
+  --warning-c: #f2a93b;
+  --danger-c: #ff7e5f;
+
+  /* Ring roles */
+  --ring-fill: var(--aqua); /* calories eaten */
+  --ring-track: rgba(22, 112, 124, 0.16); /* faint teal-shadow */
+  --ring-burned: var(--coral); /* earned-back calories */
+  --ring-protein: #34d1be;
+  --ring-carbs: #1f9bad;
+  --ring-fat: #0c5a66;
+  --ring-calories: var(--aqua);
+
+  /* Convenience aliases used across components */
+  --muted: var(--ink-muted);
+
+  /* Soft, low depth */
+  --shadow-soft: 0 4px 16px rgba(12, 90, 102, 0.08);
+  --ease-water: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- HeroUI v3 token overrides (light) ---- */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --surface: var(--card);
+  --surface-foreground: var(--ink);
+  --overlay: var(--card);
+  --overlay-foreground: var(--ink);
+  --muted: var(--ink-muted);
+
+  --accent: var(--aqua);
+  --accent-foreground: #04302b;
+  --accent-soft: var(--aqua-tint);
+  --accent-soft-foreground: #0c5a66;
+  --accent-hover: #2bbfad;
+
+  --success: var(--success-c);
+  --warning: var(--warning-c);
+  --danger: var(--danger-c);
+
+  --border: var(--line);
+  --separator: var(--line);
+  --focus: var(--aqua);
+
+  /* Shape scale: cards 20, buttons 14, inputs 12 */
+  --radius: 14px;
+  --radius-xl: 20px;
+  --radius-xs: 12px;
+
+  --default-transition-timing-function: var(--ease-water);
+  --default-font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---------- Dark mode ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #eaf6f5;
+    --ink-muted: #9fc0c2;
+    --line: rgba(255, 255, 255, 0.08);
+    --bg: #07343c;
+    --card: #0c5a66;
+
+    --ring-track: rgba(255, 255, 255, 0.12);
+    --ring-fat: #8fe7dc;
+
+    --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.28);
+
+    --background: var(--bg);
+    --foreground: var(--ink);
+    --surface: var(--card);
+    --surface-foreground: var(--ink);
+    --overlay: #0c5a66;
+    --overlay-foreground: var(--ink);
+    --muted: var(--ink-muted);
+    --accent-foreground: #04302b;
+    --accent-soft: rgba(52, 209, 190, 0.16);
+    --accent-soft-foreground: #8fe7dc;
+    --border: var(--line);
+    --separator: var(--line);
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Sora for display / headings / stats */
+h1, h2, h3, .font-display {
+  font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.stat {
+  font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+
+/* Card surface — soft, low depth, 20px radius */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-soft);
+}
+/* Back-compat: components authored against .glass now get the card look */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Pulse used while the model is thinking */
+@keyframes tidepulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.tide-pulse { animation: tidepulse 1.4s ease-in-out infinite; }
+
+@keyframes risein {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: risein 0.6s var(--ease-water) both; }
+
+* { -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
