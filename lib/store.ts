@@ -43,10 +43,12 @@ export const DEFAULT_TARGETS: Macros = {
 };
 
 export type WeightUnit = "kg" | "lb";
+export type HeightUnit = "cm" | "ft";
 export type Profile = {
   weight: number | null; // in `weightUnit`
   weightUnit: WeightUnit;
-  heightCm: number | null;
+  heightCm: number | null; // canonical storage, always cm
+  heightUnit: HeightUnit; // display preference
   age: number | null;
   sex: "male" | "female" | "";
 };
@@ -55,9 +57,26 @@ export const DEFAULT_PROFILE: Profile = {
   weight: null,
   weightUnit: "kg",
   heightCm: null,
+  heightUnit: "cm",
   age: null,
   sex: "",
 };
+
+// Height conversion helpers (cm is canonical).
+export function cmToFtIn(cm: number): { ft: number; in: number } {
+  const totalIn = cm / 2.54;
+  let ft = Math.floor(totalIn / 12);
+  let inch = Math.round(totalIn - ft * 12);
+  if (inch === 12) {
+    ft += 1;
+    inch = 0;
+  }
+  return { ft, in: inch };
+}
+
+export function ftInToCm(ft: number, inch: number): number {
+  return Math.round((ft * 12 + inch) * 2.54);
+}
 
 const TARGETS_KEY = "macro-rings:targets";
 const PROFILE_KEY = "macro-rings:profile";
@@ -107,6 +126,7 @@ export function loadProfile(): Profile {
       weight: p.weight === null || p.weight === undefined ? null : num(p.weight, 0),
       weightUnit: p.weightUnit === "lb" ? "lb" : "kg",
       heightCm: p.heightCm === null || p.heightCm === undefined ? null : num(p.heightCm, 0),
+      heightUnit: p.heightUnit === "ft" ? "ft" : "cm",
       age: p.age === null || p.age === undefined ? null : num(p.age, 0),
       sex: p.sex === "male" || p.sex === "female" ? p.sex : "",
     };
@@ -124,7 +144,14 @@ export function saveProfile(p: Profile) {
 export function profileToPrompt(p: Profile): string | null {
   const bits: string[] = [];
   if (p.weight && p.weight > 0) bits.push(`weight ${p.weight} ${p.weightUnit}`);
-  if (p.heightCm && p.heightCm > 0) bits.push(`height ${p.heightCm} cm`);
+  if (p.heightCm && p.heightCm > 0) {
+    if (p.heightUnit === "ft") {
+      const { ft, in: inch } = cmToFtIn(p.heightCm);
+      bits.push(`height ${ft} ft ${inch} in`);
+    } else {
+      bits.push(`height ${p.heightCm} cm`);
+    }
+  }
   if (p.age && p.age > 0) bits.push(`age ${p.age}`);
   if (p.sex) bits.push(p.sex);
   return bits.length ? bits.join(", ") : null;
@@ -170,4 +197,28 @@ export function sumBurned(day: DayLog): number {
 
 export function makeId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+export type DaySummary = {
+  date: string;
+  calories: number;
+  burned: number;
+  count: number;
+};
+
+// All days that have any logged entries, most recent first.
+export function listLoggedDays(): DaySummary[] {
+  if (typeof window === "undefined") return [];
+  const out: DaySummary[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith(LOG_PREFIX)) continue;
+    const date = k.slice(LOG_PREFIX.length);
+    const day = loadDay(date);
+    const count = day.entries.length + day.activities.length;
+    if (count === 0) continue;
+    out.push({ date, calories: sumEaten(day).calories, burned: sumBurned(day), count });
+  }
+  out.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return out;
 }

@@ -15,6 +15,9 @@ type Props = {
   onRemoveFood: (id: string) => void;
   onRemoveActivity: (id: string) => void;
   onRefine: (kind: "food" | "activity", id: string) => void;
+  readOnly?: boolean; // viewing a past day
+  dateLabel?: string;
+  onBack?: () => void;
 };
 
 const MACROS: { key: "protein" | "carbs" | "fat"; label: string; color: string }[] = [
@@ -33,6 +36,9 @@ export default function Dashboard({
   onRemoveFood,
   onRemoveActivity,
   onRefine,
+  readOnly = false,
+  dateLabel,
+  onBack,
 }: Props) {
   const base = targets.calories;
   const fullGoal = base + burned;
@@ -54,6 +60,15 @@ export default function Dashboard({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center px-5">
+      {readOnly && dateLabel && (
+        <div
+          className="mb-1 rounded-full px-3 py-1 text-xs font-medium"
+          style={{ background: "var(--aqua-tint)", color: "var(--teal-deep)" }}
+        >
+          📅 Viewing {dateLabel}
+        </div>
+      )}
+
       {/* Hero calorie ring */}
       <div className="relative mt-3 flex flex-col items-center">
         <ProgressRing
@@ -102,7 +117,9 @@ export default function Dashboard({
       {/* Today's log */}
       <div className="mt-10 w-full">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[var(--ink-muted)]">Today</h3>
+          <h3 className="text-sm font-semibold text-[var(--ink-muted)]">
+            {readOnly ? "Entries" : "Today"}
+          </h3>
           {feed.length > 0 && (
             <span className="text-xs text-[var(--ink-muted)]">{feed.length} entries</span>
           )}
@@ -186,22 +203,24 @@ export default function Dashboard({
                         </ul>
                       )}
 
-                      <div className="mt-3 flex items-center gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onPress={() => onRefine(row.kind, id)}
-                        >
-                          💬 Not quite? Tell it more
-                        </Button>
-                        <Button
-                          variant="tertiary"
-                          size="sm"
-                          onPress={() => (isFood ? onRemoveFood(id) : onRemoveActivity(id))}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+                      {!readOnly && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onPress={() => onRefine(row.kind, id)}
+                          >
+                            💬 Not quite? Tell it more
+                          </Button>
+                          <Button
+                            variant="tertiary"
+                            size="sm"
+                            onPress={() => (isFood ? onRemoveFood(id) : onRemoveActivity(id))}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </li>
@@ -219,18 +238,26 @@ export default function Dashboard({
         style={{ borderColor: "var(--line)", background: "color-mix(in srgb, var(--bg) 78%, transparent)" }}
       >
         <div className="mx-auto flex w-full max-w-md gap-3">
-          <Button variant="primary" size="lg" fullWidth onPress={onLogFood}>
-            🍽️ Log food
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            fullWidth
-            onPress={onLogActivity}
-            style={{ borderColor: "var(--coral)", color: "var(--coral)" }}
-          >
-            🏄 Log activity
-          </Button>
+          {readOnly ? (
+            <Button variant="primary" size="lg" fullWidth onPress={onBack}>
+              ← Back to today
+            </Button>
+          ) : (
+            <>
+              <Button variant="primary" size="lg" fullWidth onPress={onLogFood}>
+                🍽️ Log food
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                fullWidth
+                onPress={onLogActivity}
+                style={{ borderColor: "var(--coral)", color: "var(--coral)" }}
+              >
+                🏄 Log activity
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

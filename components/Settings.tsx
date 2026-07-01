@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button, NumberField, toast } from "@heroui/react";
-import type { Macros, Profile, WeightUnit } from "@/lib/store";
+import { cmToFtIn, ftInToCm } from "@/lib/store";
+import type { Macros, Profile, WeightUnit, HeightUnit } from "@/lib/store";
 
 type Props = {
   targets: Macros;
@@ -26,6 +27,19 @@ export default function Settings({ targets, profile, onSave }: Props) {
 
   const setNum = (key: "weight" | "heightCm" | "age", v: number) =>
     setP((d) => ({ ...d, [key]: Number.isFinite(v) ? Math.max(0, Math.round(v)) : null }));
+
+  const setHeightFt = (v: number) => {
+    const cur = p.heightCm ? cmToFtIn(p.heightCm) : { ft: 0, in: 0 };
+    const ft = Number.isFinite(v) ? Math.max(0, Math.round(v)) : 0;
+    const cm = ftInToCm(ft, cur.in);
+    setP((d) => ({ ...d, heightCm: cm > 0 ? cm : null }));
+  };
+  const setHeightIn = (v: number) => {
+    const cur = p.heightCm ? cmToFtIn(p.heightCm) : { ft: 0, in: 0 };
+    const inch = Number.isFinite(v) ? Math.min(11, Math.max(0, Math.round(v))) : 0;
+    const cm = ftInToCm(cur.ft, inch);
+    setP((d) => ({ ...d, heightCm: cm > 0 ? cm : null }));
+  };
 
   function save() {
     onSave(t, p);
@@ -113,25 +127,81 @@ export default function Settings({ targets, profile, onSave }: Props) {
         </div>
 
         {/* Height */}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="font-medium">Height</div>
-            <div className="text-xs text-[var(--ink-muted)]">cm</div>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="font-medium">Height</div>
+              <div className="flex overflow-hidden rounded-full border border-[var(--line)]">
+                {(["cm", "ft"] as HeightUnit[]).map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => setP((d) => ({ ...d, heightUnit: u }))}
+                    className="px-2.5 py-1 text-sm"
+                    style={
+                      p.heightUnit === u
+                        ? { background: "var(--aqua)", color: "#04302b", fontWeight: 600 }
+                        : { color: "var(--ink-muted)" }
+                    }
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {p.heightUnit === "cm" && (
+              <NumberField
+                value={p.heightCm ?? NaN}
+                onChange={(v) => setNum("heightCm", v)}
+                minValue={0}
+                step={1}
+                className="w-36"
+                aria-label="Height in cm"
+              >
+                <NumberField.Group>
+                  <NumberField.DecrementButton />
+                  <NumberField.Input />
+                  <NumberField.IncrementButton />
+                </NumberField.Group>
+              </NumberField>
+            )}
           </div>
-          <NumberField
-            value={p.heightCm ?? NaN}
-            onChange={(v) => setNum("heightCm", v)}
-            minValue={0}
-            step={1}
-            className="w-36"
-            aria-label="Height in cm"
-          >
-            <NumberField.Group>
-              <NumberField.DecrementButton />
-              <NumberField.Input />
-              <NumberField.IncrementButton />
-            </NumberField.Group>
-          </NumberField>
+
+          {p.heightUnit === "ft" && (
+            <div className="flex items-center justify-end gap-2">
+              <NumberField
+                value={p.heightCm ? cmToFtIn(p.heightCm).ft : NaN}
+                onChange={(v) => setHeightFt(v)}
+                minValue={0}
+                step={1}
+                className="w-28"
+                aria-label="Height feet"
+              >
+                <NumberField.Group>
+                  <NumberField.DecrementButton />
+                  <NumberField.Input />
+                  <NumberField.IncrementButton />
+                </NumberField.Group>
+              </NumberField>
+              <span className="w-5 text-sm text-[var(--ink-muted)]">ft</span>
+              <NumberField
+                value={p.heightCm ? cmToFtIn(p.heightCm).in : NaN}
+                onChange={(v) => setHeightIn(v)}
+                minValue={0}
+                maxValue={11}
+                step={1}
+                className="w-28"
+                aria-label="Height inches"
+              >
+                <NumberField.Group>
+                  <NumberField.DecrementButton />
+                  <NumberField.Input />
+                  <NumberField.IncrementButton />
+                </NumberField.Group>
+              </NumberField>
+              <span className="w-5 text-sm text-[var(--ink-muted)]">in</span>
+            </div>
+          )}
         </div>
 
         {/* Age */}

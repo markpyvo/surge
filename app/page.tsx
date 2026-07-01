@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, toast } from "@heroui/react";
 import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
 import LogSheet from "@/components/LogSheet";
+import Calendar from "@/components/Calendar";
 import {
   DayLog,
   Macros,
   FoodEntry,
   ActivityEntry,
   Profile,
+  DaySummary,
   DEFAULT_TARGETS,
   DEFAULT_PROFILE,
   loadDay,
@@ -20,13 +22,14 @@ import {
   saveTargets,
   saveProfile,
   profileToPrompt,
+  listLoggedDays,
   sumBurned,
   sumEaten,
   todayKey,
   makeId,
 } from "@/lib/store";
 
-type View = "home" | "settings";
+type View = "home" | "settings" | "calendar";
 type SheetMode = "food" | "activity";
 type RefineTarget = { kind: SheetMode; id: string; text: string; prior: string } | null;
 
@@ -37,11 +40,18 @@ export default function Page() {
   const [view, setView] = useState<View>("home");
   const [targets, setTargets] = useState<Macros>(DEFAULT_TARGETS);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
+  const [activeDate, setActiveDate] = useState<string>(todayKey());
   const [day, setDay] = useState<DayLog>({ date: todayKey(), entries: [], activities: [] });
+  const [historyDays, setHistoryDays] = useState<DaySummary[]>([]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<SheetMode>("food");
   const [refine, setRefine] = useState<RefineTarget>(null);
+
+  const activeDateRef = useRef(activeDate);
+  activeDateRef.current = activeDate;
+
+  const isViewingPast = activeDate !== todayKey();
 
   useEffect(() => {
     setTargets(loadTargets());
@@ -49,12 +59,34 @@ export default function Page() {
     setDay(loadDay(todayKey()));
     setReady(true);
     const onVisible = () => {
+      // Only auto-roll the day when we're actually viewing today.
+      if (activeDateRef.current !== todayKey()) return;
       const key = todayKey();
+      setActiveDate(key);
       setDay((d) => (d.date === key ? d : loadDay(key)));
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
+
+  function goToDate(date: string) {
+    setActiveDate(date);
+    setDay(loadDay(date));
+    setView("home");
+  }
+
+  function openCalendar() {
+    setHistoryDays(listLoggedDays());
+    setView("calendar");
+  }
+
+  function dateLabel(dateStr: string): string {
+    const d = new Date(dateStr + "T00:00:00");
+    const t = new Date(todayKey() + "T00:00:00");
+    const diff = Math.round((t.getTime() - d.getTime()) / 86_400_000);
+    if (diff === 1) return "yesterday";
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  }
 
   const eaten = useMemo(() => sumEaten(day), [day]);
   const burned = useMemo(() => sumBurned(day), [day]);
@@ -252,14 +284,23 @@ export default function Page() {
           <div>
             <h1 className="text-xl font-bold leading-none">Surge</h1>
             <p className="text-[11px] text-[var(--ink-muted)]">
-              {view === "settings" ? "Targets & profile" : "Close your rings"}
+              {view === "settings"
+                ? "Targets & profile"
+                : view === "calendar"
+                ? "History"
+                : "Close your rings"}
             </p>
           </div>
         </div>
         {view === "home" ? (
-          <Button variant="tertiary" size="sm" isIconOnly aria-label="Settings" onPress={() => setView("settings")}>
-            ⚙️
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="tertiary" size="sm" isIconOnly aria-label="History" onPress={openCalendar}>
+              📅
+            </Button>
+            <Button variant="tertiary" size="sm" isIconOnly aria-label="Settings" onPress={() => setView("settings")}>
+              ⚙️
+            </Button>
+          </div>
         ) : (
           <Button variant="tertiary" size="sm" onPress={() => setView("home")}>
             Done
@@ -271,12 +312,17 @@ export default function Page() {
         <div className="mt-24 text-center text-sm text-[var(--ink-muted)] tide-pulse">Loading…</div>
       ) : view === "settings" ? (
         <Settings targets={targets} profile={profile} onSave={saveSettings} />
+      ) : view === "calendar" ? (
+        <Calendar days={historyDays} activeDate={activeDate} onSelect={goToDate} />
       ) : (
         <Dashboard
           targets={targets}
           eaten={eaten}
           burned={burned}
           day={day}
+          readOnly={isViewingPast}
+          dateLabel={isViewingPast ? dateLabel(activeDate) : undefined}
+          onBack={() => goToDate(todayKey())}
           onLogFood={() => openSheet("food")}
           onLogActivity={() => openSheet("activity")}
           onRemoveFood={(id) => mutateDay((d) => ({ ...d, entries: d.entries.filter((e) => e.id !== id) }))}
