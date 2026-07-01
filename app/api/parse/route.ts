@@ -43,6 +43,36 @@ Rules:
 type Mode = "food" | "activity";
 type Msg = { role: "system" | "user" | "assistant"; content: string };
 
+// ---- Best-effort in-memory rate limiting (per warm serverless instance) ----
+const RL_WINDOW_MS = 60_000; // 1 minute
+const RL_MAX = 12; // requests per IP per window
+const TEXT_MAX = 400; // max chars of user input we forward to the model
+const hits = new Map<string, number[]>();
+
+function clientIp(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for") || "";
+  const first = xff.split(",")[0].trim();
+  return first || req.headers.get("x-real-ip") || "unknown";
+}
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const recent = (hits.get(ip) || []).filter((t) => now - t < RL_WINDOW_MS);
+  if (recent.length >= RL_MAX) {
+    hits.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(ip, recent);
+  // Opportunistic cleanup so the map can't grow unbounded.
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) {
+      if (!v.some((t) => now - t < RL_WINDOW_MS)) hits.delete(k);
+    }
+  }
+  return false;
+}
+
 function clampNum(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n) || n < 0) return 0;
@@ -122,6 +152,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const ip = clientIp(req);
+  if (rateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Slow down a moment — too many requests. Try again shortly." },
+      { status: 429, headers: { "Retry-After": "30" } }
+    );
+  }
+
   let text = "";
   let mode: Mode = "food";
   let history: Msg[] = [];
@@ -147,6 +185,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Cap input length so nobody can send huge prompts through the model.
+  if (text.length > TEXT_MAX) text = text.slice(0, TEXT_MAX);
 
   let systemPrompt = mode === "activity" ? ACTIVITY_PROMPT : FOOD_PROMPT;
   if (profile) {

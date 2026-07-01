@@ -26,6 +26,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Surge",
   },
+  // Next 15 emits `mobile-web-app-capable` but drops the legacy Apple tag that
+  // iOS Safari still needs to launch full-screen (no toolbar). Add it back.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: "/icon.svg",
     apple: "/apple-touch-icon.png",
