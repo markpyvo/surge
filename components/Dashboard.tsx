@@ -15,6 +15,9 @@ type Props = {
   onRemoveFood: (id: string) => void;
   onRemoveActivity: (id: string) => void;
   onRefine: (kind: "food" | "activity", id: string) => void;
+  onEditRing: (metric: keyof Macros) => void;
+  adjusted?: boolean;
+  onResetAdjust: () => void;
   readOnly?: boolean; // viewing a past day
   dateLabel?: string;
   onBack?: () => void;
@@ -36,6 +39,9 @@ export default function Dashboard({
   onRemoveFood,
   onRemoveActivity,
   onRefine,
+  onEditRing,
+  adjusted = false,
+  onResetAdjust,
   readOnly = false,
   dateLabel,
   onBack,
@@ -79,6 +85,7 @@ export default function Dashboard({
           fill="var(--ring-fill)"
           centerValue={eaten.calories}
           centerSuffix={`of ${fullGoal.toLocaleString()} kcal`}
+          onEdit={readOnly ? undefined : () => onEditRing("calories")}
         />
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
           <span className="text-[var(--ink-muted)]">
@@ -110,6 +117,7 @@ export default function Dashboard({
             label={m.label}
             caption={`${eaten[m.key]} / ${targets[m.key]} g`}
             centerSuffix="g"
+            onEdit={readOnly ? undefined : () => onEditRing(m.key)}
           />
         ))}
       </div>
@@ -124,6 +132,20 @@ export default function Dashboard({
             <span className="text-xs text-[var(--ink-muted)]">{feed.length} entries</span>
           )}
         </div>
+
+        {adjusted && !readOnly && (
+          <button
+            onClick={onResetAdjust}
+            className="glass mb-2 flex w-full items-center justify-between rounded-[20px] px-4 py-2.5 text-left"
+          >
+            <span className="text-sm text-[var(--ink-muted)]">
+              ✎ Rings manually adjusted
+            </span>
+            <span className="text-sm font-medium" style={{ color: "var(--aqua)" }}>
+              Reset
+            </span>
+          </button>
+        )}
 
         {feed.length === 0 ? (
           <div className="glass rounded-[20px] px-4 py-6 text-center text-sm text-[var(--ink-muted)]">

@@ -14,6 +14,7 @@ type Props = {
   centerSuffix?: string;
   label?: string;
   caption?: string;
+  onEdit?: () => void; // when set, the center number becomes a tappable editor
 };
 
 // Closed 360° circle. Fill sweeps clockwise from the top; once you pass the
@@ -32,6 +33,7 @@ export default function ProgressRing({
   centerSuffix,
   label,
   caption,
+  onEdit,
 }: Props) {
   const r = (size - stroke) / 2;
   const cx = size / 2;
@@ -94,19 +96,45 @@ export default function ProgressRing({
             />
           )}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            className="stat leading-none rise-in"
-            style={{ fontSize: size * 0.21, color: over ? "var(--coral)" : "var(--ink)" }}
+        {onEdit ? (
+          <button
+            onClick={onEdit}
+            aria-label={`Edit ${label || "value"}`}
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-full transition-transform active:scale-95"
           >
-            {Math.round(big).toLocaleString()}
-          </span>
-          {centerSuffix && (
-            <span style={{ fontSize: size * 0.082, color: "var(--ink-muted)", marginTop: 2 }}>
-              {centerSuffix}
+            <span
+              className="stat leading-none rise-in"
+              style={{ fontSize: size * 0.21, color: over ? "var(--coral)" : "var(--ink)" }}
+            >
+              {Math.round(big).toLocaleString()}
             </span>
-          )}
-        </div>
+            {centerSuffix && (
+              <span style={{ fontSize: size * 0.082, color: "var(--ink-muted)", marginTop: 2 }}>
+                {centerSuffix}
+              </span>
+            )}
+            <span
+              className="mt-1 opacity-55"
+              style={{ fontSize: size * 0.075, color: "var(--ink-muted)" }}
+            >
+              ✎ edit
+            </span>
+          </button>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span
+              className="stat leading-none rise-in"
+              style={{ fontSize: size * 0.21, color: over ? "var(--coral)" : "var(--ink)" }}
+            >
+              {Math.round(big).toLocaleString()}
+            </span>
+            {centerSuffix && (
+              <span style={{ fontSize: size * 0.082, color: "var(--ink-muted)", marginTop: 2 }}>
+                {centerSuffix}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       {label && (
         <div className="text-center leading-tight">

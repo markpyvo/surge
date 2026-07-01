@@ -6,6 +6,7 @@ import Dashboard from "@/components/Dashboard";
 import Settings from "@/components/Settings";
 import LogSheet from "@/components/LogSheet";
 import Calendar from "@/components/Calendar";
+import RingEditor from "@/components/RingEditor";
 import {
   DayLog,
   Macros,
@@ -25,6 +26,8 @@ import {
   listLoggedDays,
   sumBurned,
   sumEaten,
+  sumEntriesOnly,
+  hasManualAdjust,
   todayKey,
   makeId,
 } from "@/lib/store";
@@ -34,6 +37,14 @@ type SheetMode = "food" | "activity";
 type RefineTarget = { kind: SheetMode; id: string; text: string; prior: string } | null;
 
 const ZERO: Macros = { calories: 0, protein: 0, fat: 0, carbs: 0 };
+
+type RingMetric = keyof Macros;
+const RING_META: Record<RingMetric, { label: string; unit: string; color: string }> = {
+  calories: { label: "Calories", unit: "kcal", color: "var(--ring-fill)" },
+  protein: { label: "Protein", unit: "g", color: "var(--ring-protein)" },
+  carbs: { label: "Carbs", unit: "g", color: "var(--ring-carbs)" },
+  fat: { label: "Fat", unit: "g", color: "var(--ring-fat)" },
+};
 
 export default function Page() {
   const [ready, setReady] = useState(false);
@@ -47,6 +58,7 @@ export default function Page() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetMode, setSheetMode] = useState<SheetMode>("food");
   const [refine, setRefine] = useState<RefineTarget>(null);
+  const [editMetric, setEditMetric] = useState<RingMetric | null>(null);
 
   const activeDateRef = useRef(activeDate);
   activeDateRef.current = activeDate;
@@ -90,6 +102,7 @@ export default function Page() {
 
   const eaten = useMemo(() => sumEaten(day), [day]);
   const burned = useMemo(() => sumBurned(day), [day]);
+  const adjusted = useMemo(() => hasManualAdjust(day), [day]);
 
   // Always read the freshest persisted day, mutate, save, and set state.
   function mutateDay(fn: (d: DayLog) => DayLog) {
@@ -100,6 +113,20 @@ export default function Page() {
       saveDay(next);
       return next;
     });
+  }
+
+  // Hand-edit a ring: store the offset so entries + offset == the entered value.
+  function setRingValue(metric: RingMetric, value: number) {
+    mutateDay((d) => {
+      const base = sumEntriesOnly(d);
+      const adj = { ...(d.manualAdjust ?? ZERO) };
+      adj[metric] = Math.round(value) - base[metric];
+      return { ...d, manualAdjust: adj };
+    });
+  }
+
+  function resetAdjust() {
+    mutateDay((d) => ({ ...d, manualAdjust: { ...ZERO } }));
   }
 
   function openSheet(mode: SheetMode) {
@@ -328,6 +355,9 @@ export default function Page() {
           onRemoveFood={(id) => mutateDay((d) => ({ ...d, entries: d.entries.filter((e) => e.id !== id) }))}
           onRemoveActivity={(id) => mutateDay((d) => ({ ...d, activities: d.activities.filter((a) => a.id !== id) }))}
           onRefine={startRefine}
+          onEditRing={(m) => setEditMetric(m)}
+          adjusted={adjusted}
+          onResetAdjust={resetAdjust}
         />
       )}
 
@@ -337,6 +367,19 @@ export default function Page() {
         refineText={refine?.text ?? null}
         onClose={() => setSheetOpen(false)}
         onSubmit={onSheetSubmit}
+      />
+
+      <RingEditor
+        open={editMetric !== null}
+        label={RING_META[editMetric ?? "calories"].label}
+        unit={RING_META[editMetric ?? "calories"].unit}
+        color={RING_META[editMetric ?? "calories"].color}
+        value={eaten[editMetric ?? "calories"]}
+        onClose={() => setEditMetric(null)}
+        onSave={(v) => {
+          if (editMetric) setRingValue(editMetric, v);
+          setEditMetric(null);
+        }}
       />
     </main>
   );

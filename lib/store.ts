@@ -33,6 +33,7 @@ export type DayLog = {
   date: string; // YYYY-MM-DD (local)
   entries: FoodEntry[];
   activities: ActivityEntry[];
+  manualAdjust?: Macros; // per-metric offset applied when a ring is edited by hand
 };
 
 export const DEFAULT_TARGETS: Macros = {
@@ -168,10 +169,25 @@ export function loadDay(date = todayKey()): DayLog {
       date,
       entries: Array.isArray(p?.entries) ? p.entries : [],
       activities: Array.isArray(p?.activities) ? p.activities : [],
+      manualAdjust: parseAdjust(p?.manualAdjust),
     };
   } catch {
     return empty;
   }
+}
+
+// Manual adjustments can be negative, so parse them signed (num() rejects < 0).
+function sint(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : 0;
+}
+function parseAdjust(a: any): Macros {
+  return {
+    calories: sint(a?.calories),
+    protein: sint(a?.protein),
+    fat: sint(a?.fat),
+    carbs: sint(a?.carbs),
+  };
 }
 
 export function saveDay(day: DayLog) {
@@ -179,7 +195,8 @@ export function saveDay(day: DayLog) {
   localStorage.setItem(LOG_PREFIX + day.date, JSON.stringify(day));
 }
 
-export function sumEaten(day: DayLog): Macros {
+// Sum of just the logged food entries (no manual adjustment).
+export function sumEntriesOnly(day: DayLog): Macros {
   return day.entries.reduce<Macros>(
     (acc, e) => ({
       calories: acc.calories + e.totals.calories,
@@ -189,6 +206,23 @@ export function sumEaten(day: DayLog): Macros {
     }),
     { calories: 0, protein: 0, fat: 0, carbs: 0 }
   );
+}
+
+// What the rings show: entries + any hand-edited adjustment (clamped at 0).
+export function sumEaten(day: DayLog): Macros {
+  const base = sumEntriesOnly(day);
+  const adj = day.manualAdjust ?? { calories: 0, protein: 0, fat: 0, carbs: 0 };
+  return {
+    calories: Math.max(0, base.calories + adj.calories),
+    protein: Math.max(0, base.protein + adj.protein),
+    fat: Math.max(0, base.fat + adj.fat),
+    carbs: Math.max(0, base.carbs + adj.carbs),
+  };
+}
+
+export function hasManualAdjust(day: DayLog): boolean {
+  const a = day.manualAdjust;
+  return !!a && (a.calories !== 0 || a.protein !== 0 || a.fat !== 0 || a.carbs !== 0);
 }
 
 export function sumBurned(day: DayLog): number {
