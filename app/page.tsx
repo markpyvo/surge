@@ -329,7 +329,7 @@ export default function Page() {
             </Button>
           </div>
         ) : (
-          <Button variant="tertiary" size="sm" onPress={() => setView("home")}>
+          <Button variant="tertiary" size="sm" className="text-[var(--ink)]" onPress={() => setView("home")}>
             Done
           </Button>
         )}
