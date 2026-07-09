@@ -85,37 +85,12 @@
   --default-font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* ---------- Dark mode ---------- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #eaf6f5;
-    --ink-muted: #9fc0c2;
-    --line: rgba(255, 255, 255, 0.08);
-    --bg: #07343c;
-    --card: #0c5a66;
-
-    --ring-track: rgba(255, 255, 255, 0.12);
-    --ring-fat: #8fe7dc;
-
-    --shadow-soft: 0 6px 20px rgba(0, 0, 0, 0.28);
-
-    --background: var(--bg);
-    --foreground: var(--ink);
-    --surface: var(--card);
-    --surface-foreground: var(--ink);
-    --overlay: #0c5a66;
-    --overlay-foreground: var(--ink);
-    --muted: var(--ink-muted);
-    --accent-foreground: #04302b;
-    --accent-soft: rgba(52, 209, 190, 0.16);
-    --accent-soft-foreground: #8fe7dc;
-    --border: var(--line);
-    --separator: var(--line);
-  }
-}
+/* Light-only: Surge is locked to its light "Tide" palette regardless of the
+   device's system theme (the previous prefers-color-scheme dark overrides were
+   intentionally removed). */
 
 html {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 body {
