@@ -98,7 +98,7 @@ export default function Settings({ targets, profile, onSave }: Props) {
                 <button
                   key={u}
                   onClick={() => setP((d) => ({ ...d, weightUnit: u }))}
-                  className="px-3 py-1 text-sm"
+                  className="px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--aqua)] focus-visible:ring-inset"
                   style={
                     p.weightUnit === u
                       ? { background: "var(--aqua)", color: "#04302b", fontWeight: 600 }
@@ -129,14 +129,14 @@ export default function Settings({ targets, profile, onSave }: Props) {
         {/* Height */}
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between gap-3">
+            <div className="font-medium">Height</div>
             <div className="flex items-center gap-2">
-              <div className="font-medium">Height</div>
               <div className="flex overflow-hidden rounded-full border border-[var(--line)]">
                 {(["cm", "ft"] as HeightUnit[]).map((u) => (
                   <button
                     key={u}
                     onClick={() => setP((d) => ({ ...d, heightUnit: u }))}
-                    className="px-2.5 py-1 text-sm"
+                    className="px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--aqua)] focus-visible:ring-inset"
                     style={
                       p.heightUnit === u
                         ? { background: "var(--aqua)", color: "#04302b", fontWeight: 600 }
@@ -147,24 +147,24 @@ export default function Settings({ targets, profile, onSave }: Props) {
                   </button>
                 ))}
               </div>
-            </div>
 
-            {p.heightUnit === "cm" && (
-              <NumberField
-                value={p.heightCm ?? NaN}
-                onChange={(v) => setNum("heightCm", v)}
-                minValue={0}
-                step={1}
-                className="w-32"
-                aria-label="Height in cm"
-              >
-                <NumberField.Group>
-                  <NumberField.DecrementButton />
-                  <NumberField.Input />
-                  <NumberField.IncrementButton />
-                </NumberField.Group>
-              </NumberField>
-            )}
+              {p.heightUnit === "cm" && (
+                <NumberField
+                  value={p.heightCm ?? NaN}
+                  onChange={(v) => setNum("heightCm", v)}
+                  minValue={0}
+                  step={1}
+                  className="w-32"
+                  aria-label="Height in cm"
+                >
+                  <NumberField.Group>
+                    <NumberField.DecrementButton />
+                    <NumberField.Input />
+                    <NumberField.IncrementButton />
+                  </NumberField.Group>
+                </NumberField>
+              )}
+            </div>
           </div>
 
           {p.heightUnit === "ft" && (
@@ -228,7 +228,7 @@ export default function Settings({ targets, profile, onSave }: Props) {
               <button
                 key={o.label}
                 onClick={() => setP((d) => ({ ...d, sex: o.v }))}
-                className="px-3.5 py-1.5 text-sm"
+                className="px-3.5 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--aqua)] focus-visible:ring-inset"
                 style={
                   p.sex === o.v
                     ? { background: "var(--aqua)", color: "#04302b", fontWeight: 600 }
