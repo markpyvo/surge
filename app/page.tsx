@@ -7,6 +7,7 @@ import Settings from "@/components/Settings";
 import LogSheet from "@/components/LogSheet";
 import Calendar from "@/components/Calendar";
 import RingEditor from "@/components/RingEditor";
+import TradingCard from "@/components/TradingCard";
 import {
   DayLog,
   Macros,
@@ -59,6 +60,7 @@ export default function Page() {
   const [sheetMode, setSheetMode] = useState<SheetMode>("food");
   const [refine, setRefine] = useState<RefineTarget>(null);
   const [editMetric, setEditMetric] = useState<RingMetric | null>(null);
+  const [cardOpen, setCardOpen] = useState(false);
 
   const activeDateRef = useRef(activeDate);
   activeDateRef.current = activeDate;
@@ -307,9 +309,11 @@ export default function Page() {
       <header className="mx-auto mb-3 flex w-full max-w-md items-center justify-between px-5">
         <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="Surge" width={34} height={34} className="rounded-[10px]" />
+          <img src="/icon-192.png" alt="Surge" width={34} height={34} className="rounded-[10px]" />
           <div>
-            <h1 className="text-xl font-bold leading-none">Surge</h1>
+            <h1 className="text-xl font-bold leading-none" style={{ letterSpacing: "0.06em" }}>
+              SURGE
+            </h1>
             <p className="text-[11px] text-[var(--ink-muted)]">
               {view === "settings"
                 ? "Targets & profile"
@@ -356,6 +360,7 @@ export default function Page() {
           onRemoveActivity={(id) => mutateDay((d) => ({ ...d, activities: d.activities.filter((a) => a.id !== id) }))}
           onRefine={startRefine}
           onEditRing={(m) => setEditMetric(m)}
+          onShareCard={() => setCardOpen(true)}
           adjusted={adjusted}
           onResetAdjust={resetAdjust}
         />
@@ -367,6 +372,19 @@ export default function Page() {
         refineText={refine?.text ?? null}
         onClose={() => setSheetOpen(false)}
         onSubmit={onSheetSubmit}
+      />
+
+      <TradingCard
+        open={cardOpen}
+        onClose={() => setCardOpen(false)}
+        dateLabel={new Date(activeDate + "T00:00:00").toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })}
+        eaten={eaten}
+        targets={targets}
+        burned={burned}
       />
 
       <RingEditor

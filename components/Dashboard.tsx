@@ -16,6 +16,7 @@ type Props = {
   onRemoveActivity: (id: string) => void;
   onRefine: (kind: "food" | "activity", id: string) => void;
   onEditRing: (metric: keyof Macros) => void;
+  onShareCard: () => void;
   adjusted?: boolean;
   onResetAdjust: () => void;
   readOnly?: boolean; // viewing a past day
@@ -40,6 +41,7 @@ export default function Dashboard({
   onRemoveActivity,
   onRefine,
   onEditRing,
+  onShareCard,
   adjusted = false,
   onResetAdjust,
   readOnly = false,
@@ -121,6 +123,16 @@ export default function Dashboard({
           />
         ))}
       </div>
+
+      {/* Share the day as a collectible card */}
+      <button
+        onClick={onShareCard}
+        className="glass mt-8 flex w-full items-center justify-center gap-2 rounded-[20px] px-4 py-3 text-sm font-semibold transition-transform active:scale-[0.98]"
+        style={{ color: "var(--teal-deep)" }}
+      >
+        <span aria-hidden>🎴</span>
+        {readOnly ? "Share this day's card" : "Share today's card"}
+      </button>
 
       {/* Today's log */}
       <div className="mt-10 w-full">
